@@ -1,0 +1,13 @@
+# Private credentials - never commit
+Deskbot/src/secrets.h
+
+# Build output
+build/
+*.bin
+*.elf
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

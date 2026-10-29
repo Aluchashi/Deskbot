@@ -13,15 +13,15 @@
 #include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeSans9pt7b.h>
 
-#include "config.h"  // pins, defaults, zones, colors, timing, counts
+#include "src/config.h"  // pins, defaults, zones, colors, timing, counts
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // These headers use the global `display`, so they must come after it
-#include "helpers.h"    // text/url/html helpers, setBrightness()
-#include "icons.h"      // weather icons
-#include "ui_widgets.h" // wifi, bell, heart, drop, header, printCentered...
-#include "dashboard.h"  // DASH_HTML (phone dashboard page)
+#include "src/helpers.h"    // text/url/html helpers, setBrightness()
+#include "src/icons.h"      // weather icons
+#include "src/ui_widgets.h" // wifi, bell, heart, drop, header, printCentered...
+#include "src/dashboard.h"  // DASH_HTML (phone dashboard page)
 
 Preferences prefs;
 WebServer server(80);
