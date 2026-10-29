@@ -8,7 +8,6 @@ A tiny ESP32 desk companion with an animated pair of eyes, a clock, live weather
 ## Features
 
 - **Animated eyes** with 9 moods (normal, happy, surprised, sleepy, angry, sad, excited, love, suspicious), blinking, gaze movement and mood particles (rain drops, hearts, "z").
-- **Weather-aware mood**: the eyes react to the current weather.
 - **6 pages**: Eyes, Clock, Weather, 3-day Forecast, World Clock, Pomodoro.
 - **3 alarms** with weekday selection, snooze and a non-blocking buzzer.
 - **Pomodoro timer** with configurable focus / break / long break / rounds.
