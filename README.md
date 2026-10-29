@@ -11,6 +11,15 @@
 
 [Features](#-features) · [Hardware](#-hardware) · [Getting started](#-getting-started) · [Usage](#-using-desk-bot) · [API](#-http-api) · [Structure](#-project-structure) · [Troubleshooting](#-troubleshooting)
 
+- **Animated eyes** with 9 moods (normal, happy, surprised, sleepy, angry, sad, excited, love, suspicious), blinking, gaze movement and mood particles (rain drops, hearts, "z").
+- **6 pages**: Eyes, Clock, Weather, 3-day Forecast, World Clock, Pomodoro.
+- **3 alarms** with weekday selection, snooze and a non-blocking buzzer.
+- **Pomodoro timer** with configurable focus / break / long break / rounds.
+- **Notifications**: push a message to the display with one HTTP request (works with MacroDroid, Tasker, curl, etc.).
+- **Phone dashboard** served by the ESP32 itself, with mood and page control, alarm editor, Pomodoro ring and **voice commands** (Chrome, English).
+- **Setup portal**: change WiFi, API key, city and timezone from your phone, no re-flashing needed.
+- Settings (WiFi, alarms, Pomodoro) are saved in flash and survive reboots.
+
 <!-- Add a photo or GIF of your build, then uncomment: -->
 <!-- <img src="docs/images/deskbot.jpg" width="480" alt="Desk Bot"> -->
 
