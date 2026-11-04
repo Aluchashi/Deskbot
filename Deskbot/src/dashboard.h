@@ -159,12 +159,12 @@ const PAGES=["Eyes","Clock","Weather","Forecast","World","Pomodoro"];
 const DN=["S","M","T","W","T","F","S"];
 const pad=n=>String(n).padStart(2,"0");
 const fmt=s=>pad(Math.floor(s/60))+":"+pad(s%60);
-const api=p=>fetch(p).then(r=>r.text()).catch(()=>"");
+const api=p=>fetch(p,{cache:"no-store"}).then(r=>r.text()).catch(()=>"");
 const toast=t=>{const e=$("tt");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1400)};
-let init=false,lastS=null;
+let init=false,lastS=null,refreshBusy=false;
 const build=S=>{
   $("moods").innerHTML=MOODS.map((m,i)=>`<button id="m${i}" onclick="setMood(${i})">${m}</button>`).join("");
-  $("pages").innerHTML=PAGES.map((m,i)=>`<button onclick="setPage(${i})">${m}</button>`).join("");
+  $("pages").innerHTML=PAGES.map((m,i)=>`<button id="pg${i}" onclick="setPage(${i})">${m}</button>`).join("");
   $("alarms").innerHTML=S.alarms.map((a,i)=>{
     let c="";
     for(let k=0;k<7;k++)c+=`<span class="chip${a.d&(1<<k)?" on":""}" onclick="this.classList.toggle('on')">${DN[k]}</span>`;
@@ -173,14 +173,18 @@ const build=S=>{
   $("pw").value=S.pomo.work;$("pbk").value=S.pomo.brk;$("pl").value=S.pomo.lng;$("pr").value=S.pomo.rounds;
 }
 const refresh=async()=>{
+  if(refreshBusy)return;
+  refreshBusy=true;
   let S;
-  try{S=await (await fetch("/api/state")).json()}catch(e){$("dt").classList.add("off");return}
+  try{S=await (await fetch("/api/state",{cache:"no-store"})).json()}catch(e){$("dt").classList.add("off");refreshBusy=false;return}
+  refreshBusy=false;
   lastS=S;
   $("dt").classList.remove("off");
   if(!init){build(S);init=true}
   $("clk").textContent=S.time;
-  $("wx").textContent=S.weather.ok?S.weather.temp+"\u00b0C  "+S.weather.main:"Weather loading...";
+  $("wx").textContent=S.weather.ok?S.weather.temp+"\u00b0C  "+S.weather.main:S.weather.status===401?"Weather API key error (401)":"Weather loading...";
   MOODS.forEach((m,i)=>$("m"+i).classList.toggle("on",S.mood===i));
+  PAGES.forEach((p,i)=>$("pg"+i).classList.toggle("on",S.page===i));
   const p=S.pomo;
   const tot=[p.work,p.brk,p.lng][p.phase]*60;
   const prog=p.started&&tot?Math.min(1,Math.max(0,(tot-p.left)/tot)):0;
@@ -190,15 +194,15 @@ const refresh=async()=>{
   $("pb").textContent=!p.started?"Start":p.running?"Pause":"Resume";
   $("ring").classList.toggle("show",!!S.ringing);
 }
-const setMood=async i=>{await api("/api/mood?m="+i);refresh()}
-const setPage=async i=>{await api("/api/page?p="+i);toast(PAGES[i])}
+const setMood=async i=>{MOODS.forEach((m,n)=>$("m"+n).classList.toggle("on",n===i));api("/api/mood?m="+i).then(refresh)}
+const setPage=async i=>{PAGES.forEach((p,n)=>$("pg"+n).classList.toggle("on",n===i));toast(PAGES[i]);api("/api/page?p="+i).then(refresh)}
 const sendMsg=async()=>{
   const t=$("mt").value,m=$("mm").value;
   if(!t&&!m)return;
   await api("/notify?title="+encodeURIComponent(t)+"&msg="+encodeURIComponent(m));
   $("mt").value="";$("mm").value="";toast("Sent");
 }
-const pomo=async a=>{await api("/api/pomo?a="+a);refresh()}
+const pomo=async a=>{const b=$("pb");if(a==="toggle"&&lastS){b.textContent=!lastS.pomo.started?"Pause":lastS.pomo.running?"Resume":"Pause"}api("/api/pomo?a="+a).then(refresh)}
 const saveP=async()=>{
   await api("/api/pomo/set?work="+$("pw").value+"&brk="+$("pbk").value+"&lng="+$("pl").value+"&rounds="+$("pr").value);
   toast("Saved");refresh();
@@ -310,5 +314,5 @@ const toggleMic=()=>{
   };
   rec.start();
 };
-refresh();setInterval(refresh,1000);
+refresh();setInterval(refresh,750);
 </script></body></html>)DASH";

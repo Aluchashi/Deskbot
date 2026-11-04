@@ -26,6 +26,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Preferences prefs;
 WebServer server(80);
 bool inConfigMode = false;
+unsigned long lastTimeSyncAttempt = 0;
+unsigned long timeSyncStartedAt = 0;
 
 // ---- Pages ----
 #define PAGE_EYES 0
@@ -56,6 +58,8 @@ String wifiSsid, wifiPass, apiKey, city, countryCode, tzString;
 // ---- Weather data ----
 bool weatherLoaded = false;
 bool forecastLoaded = false;
+bool weatherApiAuthFailed = false;
+int weatherApiStatus = 0;
 unsigned long lastWeatherUpdate = 0;
 float temperature = 0, feelsLike = 0;
 int humidity = 0;
@@ -379,6 +383,7 @@ String stateJson() {
   j += ",\"page\":" + String(currentPage);
   j += ",\"ringing\":" + String(alarmRinging ? 1 : 0);
   j += ",\"weather\":{\"ok\":" + String(weatherLoaded ? 1 : 0);
+  j += ",\"status\":" + String(weatherApiStatus);
   j += ",\"temp\":" + String((int)lround(temperature));
   j += ",\"main\":\"" + weatherMain + "\"}";
   j += ",\"alarms\":[";
@@ -517,15 +522,19 @@ void updateMoodFromWeather() {
 }
 
 void fetchWeather() {
-  if (WiFi.status() != WL_CONNECTED) return;
+  if (WiFi.status() != WL_CONNECTED || weatherApiAuthFailed) return;
   HTTPClient http;
-  http.setTimeout(6000);
+  // Keep failed upstream requests from freezing dashboard/API handling.
+  http.setTimeout(2500);
   String place = urlEncodeSpaces(city) + "," + countryCode;
 
   // ---- current weather ----
   String url = "http://api.openweathermap.org/data/2.5/weather?q=" + place + "&appid=" + apiKey + "&units=metric";
   http.begin(url);
-  if (http.GET() == 200) {
+  int weatherCode = http.GET();
+  weatherApiStatus = weatherCode;
+  if (weatherCode == 401) weatherApiAuthFailed = true;
+  if (weatherCode == 200) {
     JSONVar o = JSON.parse(http.getString());
     if (JSON.typeof(o) != "undefined") {
       temperature = double(o["main"]["temp"]);
@@ -539,6 +548,10 @@ void fetchWeather() {
     }
   }
   http.end();
+
+  // An unauthorized key will also fail the forecast endpoint. Avoid a second
+  // blocking request; retrying requires correcting the saved API key first.
+  if (weatherApiAuthFailed || !weatherLoaded) return;
 
   // ---- forecast ----
   url = "http://api.openweathermap.org/data/2.5/forecast?q=" + place + "&appid=" + apiKey + "&units=metric";
@@ -738,9 +751,11 @@ void drawClockPage() {
   struct tm t;
   display.setFont(NULL);
   display.setTextColor(FG);
-  if (!getLocalTime(&t, 0)) {
+  if (!getLocalTime(&t, 0) || t.tm_year < (2024 - 1900)) {
     drawHeader("CLOCK");
-    printCentered("Syncing time...", 64, 34);
+    bool syncTimedOut = timeSyncStartedAt && millis() - timeSyncStartedAt > 20000UL;
+    printCentered(syncTimedOut ? "Time sync failed" : "Syncing time...", 64, 31);
+    if (syncTimedOut) printCentered("Check WiFi internet", 64, 46);
     return;
   }
   // top row: weekday + wifi
@@ -801,7 +816,11 @@ void drawWeatherPage() {
 
   if (WiFi.status() != WL_CONNECTED || !weatherLoaded) {
     display.setFont(NULL);
-    printCentered(WiFi.status() != WL_CONNECTED ? "No WiFi" : "Loading weather...", 64, 32);
+    if (WiFi.status() != WL_CONNECTED) printCentered("No WiFi", 64, 32);
+    else if (weatherApiAuthFailed) {
+      printCentered("Weather API key error", 64, 27);
+      printCentered("Update API key", 64, 43);
+    } else printCentered("Loading weather...", 64, 32);
     return;
   }
   drawWeatherIcon(2, 13, 32, weatherType(weatherMain), isNightNow());
@@ -1269,8 +1288,8 @@ bool bootScreen() {
 
 bool connectWifi() {
   WiFi.mode(WIFI_STA);
-  IPAddress ip(192, 168, 137, 200), gw(192, 168, 137, 1), mask(255, 255, 255, 0);
-  WiFi.config(ip, gw, mask, gw);
+  // Use DHCP. The old fixed 192.168.137.x address only works on one specific
+  // hotspot; on other routers WiFi can associate while DNS/NTP are unreachable.
   WiFi.begin(wifiSsid.c_str(), wifiPass.c_str());
   unsigned long st = millis();
   int f = 0;
@@ -1365,6 +1384,8 @@ void setup() {
   server.begin();
 
   configTzTime(tzString.c_str(), "pool.ntp.org", "time.google.com");
+  lastTimeSyncAttempt = millis();
+  timeSyncStartedAt = lastTimeSyncAttempt;
   fetchWeather();
   lastWeatherUpdate = millis();
   startBeep(1);
@@ -1392,6 +1413,16 @@ void loop() {
   if (WiFi.status() != WL_CONNECTED && now - lastReconnect > 30000) {
     lastReconnect = now;
     WiFi.reconnect();
+  }
+
+  // NTP starts asynchronously. Retry periodically if the network was offline,
+  // DNS failed, or the access point blocked the initial time request.
+  struct tm syncedTime;
+  bool timeIsValid = getLocalTime(&syncedTime, 0) && syncedTime.tm_year >= (2024 - 1900);
+  if (!timeIsValid && WiFi.status() == WL_CONNECTED && now - lastTimeSyncAttempt > 60000UL) {
+    configTzTime(tzString.c_str(), "pool.ntp.org", "time.google.com");
+    lastTimeSyncAttempt = now;
+    timeSyncStartedAt = now;
   }
 
   display.clearDisplay();
