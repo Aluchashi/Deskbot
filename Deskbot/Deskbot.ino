@@ -875,20 +875,54 @@ void drawForecastPage() {
   }
 }
 
-void drawZoneCard(int x, int w, const char* name, int offMin) {
+int weekdayForDate(int year, int month, int day) {
+  static const int offsets[] = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 };
+  if (month < 3) year--;
+  return (year + year / 4 - year / 100 + year / 400 + offsets[month - 1] + day) % 7;
+}
+
+bool isGermanySummerTime(time_t utcNow) {
+  struct tm utc;
+  gmtime_r(&utcNow, &utc);
+  int year = utc.tm_year + 1900;
+  int lastSundayMarch = 31 - weekdayForDate(year, 3, 31);
+  int lastSundayOctober = 31 - weekdayForDate(year, 10, 31);
+
+  if (utc.tm_mon > 2 && utc.tm_mon < 9) return true;
+  if (utc.tm_mon == 2) {
+    return utc.tm_mday > lastSundayMarch ||
+           (utc.tm_mday == lastSundayMarch && utc.tm_hour >= 1);
+  }
+  if (utc.tm_mon == 9) {
+    return utc.tm_mday < lastSundayOctober ||
+           (utc.tm_mday == lastSundayOctober && utc.tm_hour < 1);
+  }
+  return false;
+}
+
+void drawZoneCard(int x, int w, const char* name, int offMin, bool germanyDst = false) {
   time_t now;
   time(&now);
-  now += (time_t)offMin * 60;
   struct tm t;
+  display.drawRoundRect(x, 12, w, 51, 5, FG);
+  display.setFont(NULL);
+  printCentered(name, x + w / 2, 17);
+  if (now < 1704067200) {
+    display.setFont(&FreeSans9pt7b);
+    printCentered("--:--", x + w / 2, 42);
+    display.setFont(NULL);
+    printCentered("NO SYNC", x + w / 2, 50);
+    return;
+  }
+
+  if (germanyDst && isGermanySummerTime(now)) offMin += 60;
+  now += (time_t)offMin * 60;
   gmtime_r(&now, &t);
   int h12 = t.tm_hour % 12;
   if (h12 == 0) h12 = 12;
   char buf[8];
   sprintf(buf, "%d:%02d", h12, t.tm_min);
 
-  display.drawRoundRect(x, 12, w, 51, 5, FG);
-  display.setFont(NULL);
-  printCentered(name, x + w / 2, 17);
   display.setFont(&FreeSans9pt7b);
   printCentered(buf, x + w / 2, 42);
   display.setFont(NULL);
@@ -898,7 +932,7 @@ void drawZoneCard(int x, int w, const char* name, int offMin) {
 
 void drawWorldPage() {
   drawHeader("WORLD CLOCK");
-  drawZoneCard(1, 62, ZONE1_NAME, ZONE1_OFFSET);
+  drawZoneCard(1, 62, ZONE1_NAME, ZONE1_OFFSET, true);
   drawZoneCard(65, 62, ZONE2_NAME, ZONE2_OFFSET);
 }
 

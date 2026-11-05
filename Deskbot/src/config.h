@@ -20,7 +20,7 @@
 
 // ---- World clock ----
 #define ZONE1_NAME "GERMANY"
-#define ZONE1_OFFSET 240
+#define ZONE1_OFFSET 60   // Germany standard time: UTC+1 (summer time handled in code)
 #define ZONE2_NAME "SINGAPORE"
 #define ZONE2_OFFSET 480
 
