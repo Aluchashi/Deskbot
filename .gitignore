@@ -1,5 +1,4 @@
-# Private credentials - never commit
-Deskbot/src/secrets.h
+
 
 # Build output
 build/
