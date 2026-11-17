@@ -11,7 +11,14 @@
 #define SDA_PIN 17
 #define SCL_PIN 16
 #define BUTTON_PIN 22
+#define BUTTON2_PIN 19
 #define BUZZER_PIN 21
+#define FAN_PIN 18   // Drive through a suitable fan driver/relay, not the motor directly
+#define LIGHT_PIN 23 // Drive through a suitable relay/driver, not the bulb directly
+#define FAN_ON_LEVEL HIGH   // Swap ON/OFF levels for active-low driver modules
+#define FAN_OFF_LEVEL LOW
+#define LIGHT_ON_LEVEL HIGH  // Swap HIGH/LOW below for an active-low relay module
+#define LIGHT_OFF_LEVEL LOW
 
 // ---- Defaults ----
 #define DEF_CITY "Rajshahi"

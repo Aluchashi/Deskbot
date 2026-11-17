@@ -2,7 +2,7 @@
 
 const char DASH_HTML[] PROGMEM = R"DASH(<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light">
 <title>Desk Bot</title>
 <style>
 :root{--bg:#f5f5f4;--card:#ffffff;--tx:#18181b;--mut:#8a8a93;--line:#ececea;--soft:#f3f3f2;--ac:#3b6cf6;--acx:#ffffff;--bad:#e5484d}
@@ -76,28 +76,104 @@ table.cm td:first-child{width:52%;padding-right:12px}
 table.cm tr.g td{border-top:0;padding:16px 0 4px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
 table.cm tr.g:first-of-type td{padding-top:4px}
 table.cm code{display:inline-block;background:var(--soft);border-radius:6px;padding:2px 7px;margin:1px 2px 1px 0;font-family:inherit;font-size:12px}
+</style>
+<style>
+:root{color-scheme:light;--bg:#f3f7fb;--card:#fff;--tx:#172536;--mut:#738196;--line:#e5ebf2;--soft:#edf3f8;--ac:#2878d0;--acx:#fff;--bad:#d94b58;--good:#138a68;--goodbg:#e6f5ef;--shadow:0 5px 18px rgba(30,60,90,.055)}
+body{padding:24px 16px 48px;background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.w{max-width:620px}
+.head{align-items:center;padding:2px 2px 20px}
+.head h1{font-size:14px;font-weight:750;letter-spacing:.03em;text-transform:none;color:var(--tx)}
+.clock{font-size:34px;font-weight:700;letter-spacing:-.035em;margin-top:5px}
+.wx{font-size:12px;margin-top:5px}
+.dot{width:8px;height:8px;margin-right:8px;vertical-align:1px}
+.card{border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
+h2{margin:0;font-size:13px;font-weight:700;letter-spacing:.01em;color:var(--tx);text-transform:none}
+button{font-size:14px;font-weight:650;border:1px solid var(--line);border-radius:11px;background:#fff;transition:transform .08s,background .15s,border-color .15s}
+button:active{transform:scale(.98)}
+button.p,button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.pills button{padding:8px 12px;font-size:12px}
+.device-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:15px}
+.device{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfdff;transition:background .15s,border-color .15s}
+.device.is-on{background:var(--goodbg);border-color:#b7e4d2}
+.device-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.device-icon{width:38px;height:38px;border-radius:12px;background:var(--soft);display:grid;place-items:center;color:var(--ac);font-size:18px;font-weight:800}
+.device.is-on .device-icon{background:#ccebdc;color:var(--good)}
+.device h3{margin:0;font-size:14px;font-weight:700}
+.device-state{font-size:11px;color:var(--mut);margin-top:3px}
+.device.is-on .device-state{color:var(--good);font-weight:700}
+.device button{width:100%;padding:9px 10px;font-size:12px}
+.device.is-on button{border-color:#a8d9c5;color:var(--good);background:#fff}
+.vc{flex-direction:row;align-items:center;gap:14px;text-align:left}
+#mb{width:48px;height:48px;flex:none;border:0;background:var(--ac);color:#fff}
+#mb svg{width:22px;height:22px}
+#hd{margin-top:0;font-size:14px;font-weight:650;min-height:20px}
+#rs{font-size:12px;margin-top:3px;min-height:17px}
+.voice-copy{flex:1}
+.ringbox{width:170px;height:170px;margin:4px auto 12px}
+.big{font-size:40px;font-weight:700;letter-spacing:-.03em}
+.sub{font-size:11px;margin-top:3px}
+.num{gap:8px;margin-top:14px}
+.num label{font-size:10px}
+.num input{padding:9px 6px}
+input[type=text],input[type=time],input[type=number]{font-size:14px;background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+.al{padding:13px 0}
+.top input[type=time]{font-size:18px;font-weight:650}
+.sw span{background:#dfe6ee}
+.sw span:after{background:#fff;box-shadow:0 1px 3px #9aa7b5}
+.sw input:checked+span{background:var(--ac)}
+.sw input:checked+span:after{background:#fff}
+.chips{gap:6px;margin-top:10px}
+.chip{padding:8px 0;border-radius:9px;font-size:11px;font-weight:600}
+.chip.on{color:#fff}
+.hint{font-size:11px;margin-top:8px}
+.ring{border-color:#f0c4c8;background:#fff8f8}
+.extras{padding:0;overflow:hidden}
+.extras>summary{list-style:none;cursor:pointer;text-align:left;padding:17px 18px;font-size:13px;font-weight:700;color:var(--tx)}
+.extras>summary::-webkit-details-marker{display:none}
+.extras>summary:after{content:"＋";float:right;color:var(--mut)}
+.extras[open]>summary:after{content:"−"}
+.extras-body{padding:0 18px 18px}
+.extra-section{padding:15px 0;border-top:1px solid var(--line)}
+.extra-section h2{margin-bottom:12px}
+.extra-section:first-child{border-top:0}
+.voice-help{font-size:12px;color:var(--mut);line-height:1.7;margin:0}
+table.cm{font-size:12px}
+table.cm th{font-size:10px;padding:0 0 7px}
+table.cm td{padding:8px 0;line-height:1.45}
+table.cm td:first-child{padding-right:10px}
+table.cm tr.g td{padding:13px 0 3px;font-size:10px}
+table.cm tr.g:first-of-type td{padding-top:3px}
+table.cm code{background:var(--soft);border-radius:5px;padding:2px 6px;font-size:11px}
+details.inline-help{margin-top:12px;font-size:12px;color:var(--mut)}
+details.inline-help summary{text-align:left;cursor:pointer}
+#tt{bottom:20px;transform:translate(-50%,16px);background:#172536;color:#fff;padding:10px 15px;font-size:12px;font-weight:600;box-shadow:0 6px 18px rgba(20,40,60,.2)}
+#tt.show{transform:translate(-50%,0)}
+@media(max-width:360px){body{padding:16px 11px 36px}.card{padding:15px}.device{padding:11px}.device-icon{width:32px;height:32px}.num{gap:5px}}
 </style></head><body><div class="w">
 <div class="head"><div><h1><span class="dot" id="dt"></span>Desk Bot</h1><div class="clock" id="clk">--:--:--</div><div class="wx" id="wx"></div></div></div>
 
 <div class="card ring" id="ring"><h2>Alarm ringing</h2><div class="row" style="margin-top:0"><button class="p" onclick="stopA(0)">Stop</button><button onclick="stopA(1)">Snooze 5 min</button></div></div>
 
-<div class="card"><h2>Voice</h2><div class="vc">
+<div class="card">
+<h2>Devices</h2><p class="section-note">Control fan and light from here or by voice.</p>
+<div class="device-grid">
+<div class="device" id="fanCard"><div class="device-top"><span class="device-icon" aria-hidden="true">F</span><div><h3>Fan</h3><div class="device-state" id="fanState">OFF</div></div></div><button id="fanButton" onclick="toggleFan()">Turn fan on</button></div>
+<div class="device" id="lightCard"><div class="device-top"><span class="device-icon" aria-hidden="true">L</span><div><h3>Light</h3><div class="device-state" id="lightState">OFF</div></div></div><button id="lightButton" onclick="toggleLight()">Turn light on</button></div>
+</div>
+<div class="hint">Second button: tap for fan · double tap for light</div>
+</div>
+
+<div class="card"><h2>Voice control</h2><div class="vc">
 <button id="mb" onclick="toggleMic()" aria-label="Voice command"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg></button>
-<div id="hd">Tap and speak</div><div id="rs"></div>
-<details><summary>What can I say?</summary>
-<p><b>Mood:</b> happy, sad, angry, sleepy, love<br>
-<b>Page:</b> show weather, clock, world clock, forecast, eyes<br>
-<b>Pomodoro:</b> start pomodoro, pause, resume, reset, skip<br>
-<b>Alarm:</b> alarm in 10 minutes, alarm at 7:30 am, stop, snooze<br>
-<b>Display:</b> dim, brightness high<br>
-<b>Message:</b> say hello</p></details>
+<div class="voice-copy"><div id="hd">Tap and speak</div><div id="rs"></div><div class="hint">Try “fan on” or “light off”</div></div>
 </div></div>
 
-<div class="card"><h2>Mood</h2><div class="pills" id="moods"></div></div>
+<div class="card"><h2>Display page</h2><div class="pills" id="pages"></div></div>
 
-<div class="card"><h2>Message</h2>
-<div class="stack"><input type="text" id="mt" placeholder="Title" maxlength="40"><input type="text" id="mm" placeholder="Message (English only)" maxlength="80"></div>
-<div class="row"><button class="p" onclick="sendMsg()">Show on display</button></div></div>
+<details class="card extras"><summary>More controls</summary><div class="extras-body">
+<div class="extra-section"><h2>Mood</h2><div class="pills" id="moods"></div></div>
+<div class="extra-section"><h2>Message</h2><div class="stack"><input type="text" id="mt" placeholder="Title" maxlength="40"><input type="text" id="mm" placeholder="Message" maxlength="80"></div><div class="row"><button class="p" onclick="sendMsg()">Show on display</button></div></div>
+</div></details>
 
 <div class="card"><h2>Pomodoro</h2>
 <div class="ringbox"><svg viewBox="0 0 120 120"><circle class="rbg" cx="60" cy="60" r="52"/><circle class="rfg" id="rf" cx="60" cy="60" r="52"/></svg>
@@ -106,10 +182,9 @@ table.cm code{display:inline-block;background:var(--soft);border-radius:6px;padd
 <div class="num"><div><label>Focus</label><input type="number" id="pw" min="1" max="120"></div><div><label>Break</label><input type="number" id="pbk" min="1" max="60"></div><div><label>Long</label><input type="number" id="pl" min="1" max="120"></div><div><label>Rounds</label><input type="number" id="pr" min="2" max="6"></div></div>
 <div class="row"><button onclick="saveP()">Save settings</button></div></div>
 
-<div class="card"><h2>Alarms</h2><div id="alarms"></div></div>
-
-<div class="card"><h2>Show page</h2><div class="pills" id="pages"></div></div>
-<div class="card"><h2>Voice commands</h2>
+<details class="card extras"><summary>Alarms &amp; voice commands</summary><div class="extras-body">
+<div class="extra-section"><h2>Alarms</h2><div id="alarms"></div></div>
+<div class="extra-section"><h2>Voice commands</h2>
 <table class="cm">
 <tr><th>Say</th><th>What happens</th></tr>
 
@@ -132,6 +207,14 @@ table.cm code{display:inline-block;background:var(--soft);border-radius:6px;padd
 <tr><td><code>world clock</code></td><td>Show the world clock</td></tr>
 <tr><td><code>focus</code></td><td>Show the focus timer page</td></tr>
 
+<tr class="g"><td colspan="2">Devices</td></tr>
+<tr><td><code>fan on</code> <code>turn on the fan</code></td><td>Turn the fan on</td></tr>
+<tr><td><code>fan off</code> <code>turn off the fan</code></td><td>Turn the fan off</td></tr>
+<tr><td><code>toggle fan</code></td><td>Toggle the fan</td></tr>
+<tr><td><code>turn on the light</code> <code>light on</code></td><td>Turn the light on</td></tr>
+<tr><td><code>turn off the light</code> <code>light off</code></td><td>Turn the light off</td></tr>
+<tr><td><code>toggle light</code></td><td>Toggle the light</td></tr>
+
 <tr class="g"><td colspan="2">Focus timer</td></tr>
 <tr><td><code>start</code> <code>begin</code></td><td>Start the focus timer</td></tr>
 <tr><td><code>pause focus</code> <code>stop focus</code></td><td>Pause the focus timer</td></tr>
@@ -151,7 +234,7 @@ table.cm code{display:inline-block;background:var(--soft);border-radius:6px;padd
 
 <tr class="g"><td colspan="2">Message</td></tr>
 <tr><td><code>say hello</code></td><td>Shows "hello" on the display (works with any words after "say")</td></tr>
-</table></div>
+</table></div></div></details>
 </div><div id="tt"></div><script>
 const $=i=>document.getElementById(i);
 const MOODS=["Normal","Happy","Surprised","Sleepy","Angry","Sad","Excited","Love","Suspicious"];
@@ -160,6 +243,12 @@ const DN=["S","M","T","W","T","F","S"];
 const pad=n=>String(n).padStart(2,"0");
 const fmt=s=>pad(Math.floor(s/60))+":"+pad(s%60);
 const api=p=>fetch(p,{cache:"no-store"}).then(r=>r.text()).catch(()=>"");
+const showDevice=(kind,on)=>{
+  const button=$(kind+"Button");
+  button.textContent="Turn "+kind+(on?" off":" on");button.dataset.on=on?"1":"0";
+  $(kind+"State").textContent=on?"ON":"OFF";
+  $(kind+"Card").classList.toggle("is-on",!!on);
+}
 const toast=t=>{const e=$("tt");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1400)};
 let init=false,lastS=null,refreshBusy=false;
 const build=S=>{
@@ -183,6 +272,8 @@ const refresh=async()=>{
   if(!init){build(S);init=true}
   $("clk").textContent=S.time;
   $("wx").textContent=S.weather.ok?S.weather.temp+"\u00b0C  "+S.weather.main:S.weather.status===401?"Weather API key error (401)":"Weather loading...";
+  showDevice("fan",!!S.fan);
+  showDevice("light",!!S.light);
   MOODS.forEach((m,i)=>$("m"+i).classList.toggle("on",S.mood===i));
   PAGES.forEach((p,i)=>$("pg"+i).classList.toggle("on",S.page===i));
   const p=S.pomo;
@@ -196,6 +287,13 @@ const refresh=async()=>{
 }
 const setMood=async i=>{MOODS.forEach((m,n)=>$("m"+n).classList.toggle("on",n===i));api("/api/mood?m="+i).then(refresh)}
 const setPage=async i=>{PAGES.forEach((p,n)=>$("pg"+n).classList.toggle("on",n===i));toast(PAGES[i]);api("/api/page?p="+i).then(refresh)}
+const setDevice=async(kind,on)=>{
+  showDevice(kind,on);
+  await api("/api/"+kind+"?v="+(on?1:0));refresh();
+  return kind[0].toUpperCase()+kind.slice(1)+(on?" on":" off");
+}
+const toggleFan=()=>setDevice("fan",$("fanButton").dataset.on!=="1");
+const toggleLight=()=>setDevice("light",$("lightButton").dataset.on!=="1");
 const sendMsg=async()=>{
   const t=$("mt").value,m=$("mm").value;
   if(!t&&!m)return;
@@ -266,6 +364,11 @@ const run=async raw=>{
     const low=/\b(low|dim|dark|lower|down|less)\b/.test(t);
     await api("/api/bright?v="+(low?0:1));
     return low?"Dim":"Bright";
+  }
+  if(/\b(fan|light|lights|bulb)\b/.test(t)&&/\b(on|off|toggle)\b/.test(t)){
+    const kind=/\bfan\b/.test(t)?"fan":"light";
+    const on=/\btoggle\b/.test(t)?$(kind+"Button").dataset.on!=="1":/\bon\b/.test(t);
+    return await setDevice(kind,on);
   }
   if(/reset/.test(t)){await pomo("reset");return "Pomodoro reset"}
   if(/skip/.test(t)){await pomo("skip");return "Skipped"}

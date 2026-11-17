@@ -38,6 +38,8 @@ unsigned long timeSyncStartedAt = 0;
 #define PAGE_POMO 5
 int currentPage = PAGE_EYES;
 bool highBrightness = true;
+bool fanOn = false;
+bool lightOn = false;
 
 // ---- Moods ----
 #define MOOD_NORMAL 0
@@ -156,6 +158,10 @@ bool longDone = false;
 unsigned long btnPressAt = 0;
 unsigned long lastRelease = 0;
 uint8_t tapCount = 0;
+bool btn2Down = false;
+unsigned long btn2PressAt = 0;
+unsigned long btn2LastRelease = 0;
+uint8_t btn2TapCount = 0;
 
 // ---- Overlay (page dots / toast) ----
 unsigned long overlayUntil = 0;
@@ -193,6 +199,16 @@ void showToast(const char* s) {
   strncpy(toastText, s, 15);
   toastText[15] = 0;
   overlayUntil = millis() + 1200;
+}
+
+void setFan(bool on) {
+  fanOn = on;
+  digitalWrite(FAN_PIN, fanOn ? FAN_ON_LEVEL : FAN_OFF_LEVEL);
+}
+
+void setLight(bool on) {
+  lightOn = on;
+  digitalWrite(LIGHT_PIN, lightOn ? LIGHT_ON_LEVEL : LIGHT_OFF_LEVEL);
 }
 
 void showDots() {
@@ -382,6 +398,8 @@ String stateJson() {
   j += ",\"mood\":" + String(currentMood);
   j += ",\"page\":" + String(currentPage);
   j += ",\"ringing\":" + String(alarmRinging ? 1 : 0);
+  j += ",\"fan\":" + String(fanOn ? 1 : 0);
+  j += ",\"light\":" + String(lightOn ? 1 : 0);
   j += ",\"weather\":{\"ok\":" + String(weatherLoaded ? 1 : 0);
   j += ",\"status\":" + String(weatherApiStatus);
   j += ",\"temp\":" + String((int)lround(temperature));
@@ -507,6 +525,24 @@ void handleApiBright() {
   highBrightness = (server.arg("v") == "1");
   setBrightness(display, highBrightness);
   showToast(highBrightness ? "BRIGHT" : "DIM");
+  sendOk();
+}
+
+void handleApiLight() {
+  if (!server.hasArg("v")) {
+    sendBad();
+    return;
+  }
+  setLight(server.arg("v") == "1");
+  sendOk();
+}
+
+void handleApiFan() {
+  if (!server.hasArg("v")) {
+    sendBad();
+    return;
+  }
+  setFan(server.arg("v") == "1");
   sendOk();
 }
 
@@ -1287,6 +1323,33 @@ void handleButton() {
   }
 }
 
+// Button 2: single tap toggles fan; double tap toggles light.
+void handleButton2() {
+  bool pressed = (digitalRead(BUTTON2_PIN) == LOW);
+  unsigned long now = millis();
+  if (pressed && !btn2Down) {
+    btn2Down = true;
+    btn2PressAt = now;
+  } else if (!pressed && btn2Down) {
+    btn2Down = false;
+    if (now - btn2PressAt > 30) {
+      btn2TapCount++;
+      btn2LastRelease = now;
+    }
+  }
+
+  if (btn2TapCount && !btn2Down && now - btn2LastRelease > DOUBLE_TAP_MS) {
+    if (btn2TapCount == 1) {
+      setFan(!fanOn);
+      showToast(fanOn ? "FAN ON" : "FAN OFF");
+    } else {
+      setLight(!lightOn);
+      showToast(lightOn ? "LIGHT ON" : "LIGHT OFF");
+    }
+    btn2TapCount = 0;
+  }
+}
+
 // ==================================================
 // 9. BOOT
 // ==================================================
@@ -1370,8 +1433,13 @@ void setup() {
   //Serial.begin(115200);
   Wire.begin(SDA_PIN, SCL_PIN);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON2_PIN, INPUT_PULLUP);
   pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(FAN_PIN, OUTPUT);
+  pinMode(LIGHT_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
+  setFan(false);
+  setLight(false);
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     Serial.println("OLED not found - check SDA(17)/SCL(16) wiring");
@@ -1415,6 +1483,8 @@ void setup() {
   server.on("/api/pomo", handleApiPomo);
   server.on("/api/pomo/set", handleApiPomoSet);
   server.on("/api/bright", handleApiBright);
+  server.on("/api/fan", handleApiFan);
+  server.on("/api/light", handleApiLight);
   server.begin();
 
   configTzTime(tzString.c_str(), "pool.ntp.org", "time.google.com");
@@ -1432,6 +1502,7 @@ void loop() {
 
   unsigned long now = millis();
   handleButton();
+  handleButton2();
   updateBuzzer();
   checkAlarms();
   updateAlarmRing(now);
